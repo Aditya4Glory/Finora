@@ -3,7 +3,7 @@ services:
     name: finora
     runtime: node
     plan: free
-    buildCommand: npm run render-build
+    buildCommand: npm run build
     startCommand: npm start
     autoDeploy: true
     envVars:
