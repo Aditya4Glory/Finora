@@ -288,42 +288,76 @@ cd server && npm test
 ### 1. Database Setup: MongoDB Atlas
 1. Sign up or log into [MongoDB Atlas](https://www.mongodb.com/atlas).
 2. Create a free **M0 Sandbox** cluster.
-3. Under **Database Access**, create a database user with read/write privileges.
-4. Under **Network Access**, add `0.0.0.0/0` (allow access from anywhere) to allow hosted servers to connect.
-5. Click **Connect** -> **Connect your application** (Driver: Node.js) and copy the connection string. Replace `<username>` and `<password>` with your credentials.
+3. Under **Database Access**, create a database user with username and password.
+4. Under **Network Access**, add `0.0.0.0/0` (allow access from anywhere) so Render can connect.
+5. Click **Connect** -> **Connect your application** (Driver: Node.js) and copy the connection string. Replace `<username>` and `<password>` with your database user credentials.
 
 ---
 
-### 2. Backend Deployment (e.g. Render)
-1. Push your code to a GitHub repository.
-2. Sign in to [Render](https://render.com/) and click **New +** -> **Web Service**.
-3. Connect your repository.
-4. Set the following configuration:
-   - **Root Directory**: `server`
-   - **Build Command**: `npm install`
-   - **Start Command**: `node server.js`
-5. Under **Environment Variables**, add:
+### 2. Complete Render Deployment (Option A - Recommended: Single Full-Stack Web Service)
+
+Finora is pre-configured with a unified full-stack architecture where a single Render Web Service serves both the Express REST API and the compiled React SPA on the exact same domain. This avoids CORS configuration, keeps everything on one URL, and runs entirely within Render's free tier!
+
+#### Via Render Blueprint (1-Click with `render.yaml`):
+1. Push your repository to GitHub.
+2. Sign in to [Render Dashboard](https://dashboard.render.com/).
+3. Click **New +** -> **Blueprint**.
+4. Connect your `Finora` repository.
+5. Render will automatically detect [`render.yaml`](file:///Users/adityamishra/Desktop/Finora/render.yaml) and configure:
+   - **Build Command**: `npm run render-build`
+   - **Start Command**: `npm start`
+   - **Auto-generated JWT Secret**
+6. Enter your `MONGODB_URI` when prompted.
+7. Click **Apply**. Render will install dependencies, build the client, and deploy the full-stack app.
+
+#### Manual Configuration on Render:
+1. Click **New +** -> **Web Service**.
+2. Connect your GitHub repository.
+3. Configure settings:
+   - **Name**: `finora` (or your preferred name)
+   - **Environment**: `Node`
+   - **Region**: Closest to you (e.g., Oregon, Frankfurt, Singapore)
+   - **Branch**: `main`
+   - **Root Directory**: *(leave blank — defaults to repository root)*
+   - **Build Command**: `npm run render-build`
+   - **Start Command**: `npm start`
+   - **Instance Type**: `Free`
+4. Under **Environment Variables**, add:
    - `NODE_ENV`: `production`
-   - `PORT`: `5000` (Render will inject its own port)
-   - `MONGODB_URI`: `<Your MongoDB Atlas Connection String>`
-   - `JWT_SECRET`: `<A strong random 32+ character string>`
-   - `CLIENT_URL`: `<Your Vercel Frontend URL, e.g. https://finora-app.vercel.app>`
-6. Click **Deploy Web Service** and note your service URL (e.g. `https://finora-api.onrender.com`).
+   - `MONGODB_URI`: `<Your MongoDB Atlas connection URI>`
+   - `JWT_SECRET`: `<A secure random 32+ character string>`
+5. Click **Create Web Service**.
+6. Once deployed, open your Render URL (e.g. `https://finora.onrender.com`). You will see the complete application with working authentication, dashboard, transactions, and charts!
 
 ---
 
-### 3. Frontend Deployment (Vercel)
+### 3. Separate Deployment (Option B: Backend on Render, Frontend on Vercel)
+
+If you prefer deploying the frontend and backend on separate platforms:
+
+#### Backend on Render:
+1. Create a **Web Service** on Render.
+2. Set **Root Directory** to `server`.
+3. Set **Build Command** to `npm install`.
+4. Set **Start Command** to `node server.js`.
+5. Add Environment Variables:
+   - `NODE_ENV`: `production`
+   - `MONGODB_URI`: `<Your MongoDB Atlas URI>`
+   - `JWT_SECRET`: `<Secret>`
+   - `CLIENT_URL`: `https://your-finora-app.vercel.app`
+6. Deploy and copy your backend URL (e.g. `https://finora-api.onrender.com`).
+
+#### Frontend on Vercel:
 1. Sign in to [Vercel](https://vercel.com/) and click **Add New** -> **Project**.
-2. Select your Finora repository.
+2. Import the `Finora` repository.
 3. Configure project settings:
    - **Framework Preset**: `Vite`
    - **Root Directory**: `client`
    - **Build Command**: `npm run build`
    - **Output Directory**: `dist`
-4. Under **Environment Variables**, add:
-   - `VITE_API_URL`: `<Your Render Backend API URL, e.g. https://finora-api.onrender.com/api>`
-5. Click **Deploy**.
-6. The included `client/vercel.json` automatically configures SPA routing rewrites so refreshing `/dashboard` or `/transactions` works seamlessly without 404 errors.
+4. Add Environment Variable:
+   - `VITE_API_URL`: `https://finora-api.onrender.com/api`
+5. Click **Deploy**. The included `client/vercel.json` ensures SPA routes work seamlessly.
 
 ---
 

@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: finora
+    runtime: node
+    plan: free
+    buildCommand: npm run render-build
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
