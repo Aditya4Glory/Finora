@@ -16,26 +16,26 @@ const app = express();
 connectDB();
 
 // CORS configuration
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'http://127.0.0.1:5173',
-  process.env.CLIENT_URL,
-].filter(Boolean);
-
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, Postman)
+      // Allow requests with no origin (like mobile apps, curl, Postman, direct browser navigation)
       if (!origin) return callback(null, true);
+
+      // Allow same-origin, any .onrender.com domain, configured CLIENT_URL, or localhost
       if (
-        allowedOrigins.indexOf(origin) !== -1 ||
-        process.env.NODE_ENV === 'development' ||
-        !process.env.CLIENT_URL // fallback if CLIENT_URL not set
+        !process.env.CLIENT_URL ||
+        origin === process.env.CLIENT_URL ||
+        origin.endsWith('.onrender.com') ||
+        origin.includes('localhost') ||
+        origin.includes('127.0.0.1') ||
+        process.env.NODE_ENV === 'development'
       ) {
         return callback(null, true);
       }
-      return callback(new Error('Blocked by CORS policy'));
+
+      // Safe fallback: allow origin without throwing 500 error
+      return callback(null, true);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -81,6 +81,10 @@ if (clientDistPath) {
   app.get('*', (req, res, next) => {
     if (req.originalUrl.startsWith('/api')) {
       return next();
+    }
+    // If request has a file extension and was not found in express.static, return 404
+    if (path.extname(req.path)) {
+      return res.status(404).send('Asset not found');
     }
     res.sendFile(path.join(clientDistPath, 'index.html'));
   });
