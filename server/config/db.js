@@ -2,7 +2,15 @@ const mongoose = require('mongoose');
 const os = require('os');
 const path = require('path');
 
+let isConnecting = false;
+
 const connectDB = async () => {
+  if (mongoose.connection.readyState === 1 || isConnecting) {
+    return;
+  }
+
+  isConnecting = true;
+
   try {
     let mongoUri = process.env.MONGODB_URI;
 
@@ -19,12 +27,26 @@ const connectDB = async () => {
       console.log(`In-memory MongoDB running at: ${mongoUri}`);
     }
 
-    const conn = await mongoose.connect(mongoUri);
-    console.log(`MongoDB Connected successfully: ${conn.connection.host}`);
+    const conn = await mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 6000, // Timeout fast after 6 seconds so requests don't hang indefinitely
+    });
+
+    console.log(`✓ MongoDB Connected successfully: ${conn.connection.host}`);
+    isConnecting = false;
     return conn;
   } catch (error) {
-    console.error(`MongoDB connection error: ${error.message}`);
-    process.exit(1);
+    isConnecting = false;
+    console.error(`❌ MongoDB connection error: ${error.message}`);
+    console.error('👉 TIP: Ensure your MongoDB Atlas cluster has 0.0.0.0/0 added under "Network Access" in Atlas.');
+
+    // In production or development, don't crash Express server with process.exit(1).
+    // Keep server running to serve frontend and retry connection in background.
+    if (process.env.NODE_ENV !== 'test') {
+      console.log('⏳ Retrying MongoDB connection in 5 seconds...');
+      setTimeout(connectDB, 5000);
+    } else {
+      throw error;
+    }
   }
 };
 

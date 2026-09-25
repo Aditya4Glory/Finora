@@ -49,8 +49,13 @@ app.use(express.urlencoded({ extended: true }));
 
 // Base / Health Check route
 app.get('/api/health', (req, res) => {
+  const mongoose = require('mongoose');
+  const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+  const dbStatus = states[mongoose.connection.readyState] || 'unknown';
+
   res.status(200).json({
     status: 'ok',
+    database: dbStatus,
     service: 'Finora Personal Finance API',
     timestamp: new Date().toISOString(),
   });
@@ -61,8 +66,15 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/transactions', require('./routes/transactionRoutes'));
 
 // Serve static frontend build in production if available
-const clientDistPath = path.join(__dirname, '../client/dist');
-if (fs.existsSync(clientDistPath)) {
+const clientDistCandidates = [
+  path.join(__dirname, '../client/dist'),
+  path.join(process.cwd(), 'client/dist'),
+  path.join(process.cwd(), 'dist'),
+];
+const clientDistPath = clientDistCandidates.find((p) => fs.existsSync(p));
+
+if (clientDistPath) {
+  console.log(`Serving static client files from: ${clientDistPath}`);
   app.use(express.static(clientDistPath));
 
   // SPA fallback for all non-API GET requests
@@ -72,6 +84,8 @@ if (fs.existsSync(clientDistPath)) {
     }
     res.sendFile(path.join(clientDistPath, 'index.html'));
   });
+} else {
+  console.warn('client/dist folder not found. Running in API-only mode.');
 }
 
 // 404 & Central Error Handling

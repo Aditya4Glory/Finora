@@ -16,7 +16,9 @@ import { useAuth } from '../hooks/useAuth';
 const LandingPage = () => {
   const { isAuthenticated, loading } = useAuth();
 
-  if (loading) return null;
+  if (loading) {
+    return <LoadingSpinner fullPage text="Loading Finora..." />;
+  }
   if (isAuthenticated) return <Navigate to="/dashboard" replace />;
 
   const features = [
